@@ -14,7 +14,7 @@ paddle1=null
 ball1=null
 score1=null
 targets=[]//list to store target objects
-const offset=3;//space between targets
+score=0
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -25,9 +25,29 @@ function setup() {
 
 function draw() {
   background(backgroundColor);
-  showGameInstructions();
-  for (const obj of targets) {
-    obj.show(); 
+  showGameInfo();
+  for (let i =0; i <targets.length; i++) {
+    const currentTarget = targets[i];
+
+    let collision=currentTarget.detectCollision(ball1); 
+    if (collision){
+      //increase score:
+      score+=1
+      //bounce ball:
+      ball1.Yspeed=abs(ball1.Yspeed);
+      //decrease target life:
+      currentTarget.life-=1;
+      if (currentTarget.life<0){//hide target
+        currentTarget.visible=false;
+        currentTarget.checkCollisions=false;}
+      break;
+    }
+
+  }
+
+
+  for (const currentTarget of targets) {
+    if (currentTarget.visible){currentTarget.show();}
   }
   paddle1.show();
   ball1.update(paddle1);
@@ -39,34 +59,50 @@ function draw() {
 }
 
 function createTargets(){
-  let rows=4;
+  let rows=targetColors.length;
   let cols=10;
-  let targetWidth=(windowWidth-offset*(cols+1))/cols;
-  let targetHeight=((windowHeight-offset*rows)/4)/rows;
+  let targetWidth=windowWidth/cols;
+  let targetHeight=(windowHeight/4)/rows;
   targets=[]
+  targetLife=targetColors.length-1;
+
   for (row=0;row<rows;row++){
-    let targetColor=targetColors[row]
+    let checkCollisions=true;
     for (col=0;col<cols;col++){
-      targets.push(new target(row,col,targetWidth,targetHeight,targetColor))
+      //if (row==rows-1){checkCollisions=true}//at game start ensure to check collisions in all targets in last row
+      targets.push(new target(row,col,targetWidth,targetHeight,checkCollisions,targetLife))
     }
+    targetLife-=1;
   }
   return targets
 }
 
-function showGameInstructions(){
-  let instructions="Use RIGHT and LEFT keys"
+
+function showGameInfo(){
+  //----------------------------------------------------------------
+  // DISPLAY GAME INSTRUCTIONS
+  //----------------------------------------------------------------
+  let instructions="Use RIGHT and LEFT keys";
   strokeWeight(0);
   textSize(25);
   let textWidth_ = textWidth(instructions);
   let textHeight_ = textAscent(instructions) + textDescent(instructions);
   //display a background rectangle for the instructions
   fill(150);
-  rectMode('corner')
-  rect(x=0,y=windowHeight-textHeight_-7,h=windowWidth,w=textHeight_)
+  rectMode('corner');
+  rect(x=0,y=windowHeight-textHeight_-7,h=windowWidth,w=textHeight_);
   //display the instructions centered at the bottom
   fill(20);
   text(instructions,x=windowWidth/2-textWidth_/2,y=windowHeight-textHeight_/2);
+  
+  //----------------------------------------------------------------
+  // DISPLAY SCORE
+  //----------------------------------------------------------------
+  let scoreText="SCORE: "+str(score);
+  text(scoreText,x=0,y=windowHeight-textHeight_/2);
+  
 }
+
 
 function checkKeys() {
   if (keyIsDown(RIGHT_ARROW)) {
@@ -79,12 +115,18 @@ function checkKeys() {
 
 function windowResized() {//restart game if window is resized
   resizeCanvas(windowWidth, windowHeight);
+  restartGame()
+}
+
+
+function restartGame(){
   paddle1=null
   ball1=null
   score1=null
+  targets=[]
+  score=0
   setup()
 }
-
 
 class paddle{
   constructor(){
@@ -124,7 +166,7 @@ class ball{
 
   reset(direction){
     this.x=windowWidth/2;
-    this.y=windowHeight/4;
+    this.y=windowHeight/3;
     let angle=Math.PI/2//random(-Math.PI/8,Math.PI/8)//between -22.5 and 22.5 degrees
     this.Xspeed=this.speed*cos(angle);
     this.Yspeed=this.speed*sin(angle)*direction;//direction is -1 or 1
@@ -154,7 +196,7 @@ class ball{
     
     if(this.x>=paddle1.x-paddle1.width/2 && this.x<=paddle1.x+paddle1.width/2 && this.y+this.diameter/2>=windowHeight-3*paddle1.height){
       let normalizedCenterDiff=(paddle1.x-this.x)/paddle1.width//[-1,1] range
-      let angle=(Math.PI/2)*normalizedCenterDiff //range [-45,45] degrees
+      let angle=(Math.PI/2)*normalizedCenterDiff //range [-90,90] degrees
       this.Yspeed=-1*this.speed*cos(angle)//move ball up (negative Yspeed)
       this.Xspeed=this.speed*sin(angle)
     }
@@ -163,8 +205,9 @@ class ball{
 
   check_if_ball_passed_bottom(){
     if (this.y+this.diameter/2>=windowHeight){
-      let direction = 1
-      this.reset(direction=1)
+      restartGame()
+      //let direction = 1
+      //this.reset(direction=1)
     }
   }
 
@@ -172,36 +215,34 @@ class ball{
 
 
 class target{
-  constructor(row,col,w,h,color){
+  constructor(row,col,w,h,checkCollisions,life){
+    this.life=life;
     this.width=w;
     this.height=h;
-    this.y=row*this.height+this.height/2+offset*(row+1)
-    this.x=col*this.width+this.width/2+offset*(col+1)
+    this.y=row*this.height+this.height/2;
+    this.x=col*this.width+this.width/2;
     this.radius=10;
-    this.color=color;
+    this.checkCollisions=checkCollisions;
+    this.visible=true;
   }
 
   show() {
-    fill(this.color);
-    strokeWeight(1);
+    fill(targetColors[this.life]);
+    strokeWeight(3);
+    stroke(backgroundColor)
     rectMode(CENTER);
     rect(this.x, this.y, this.width, this.height,this.radius);
   }
 
+  detectCollision(ball){
+    if (this.checkCollisions 
+    && ball.x>=this.x-this.width/2
+    && ball.x<=this.x+this.width/2 
+    && ball.y-ball.diameter/2 <= this.y+this.height/2){
+      return true;
+    }
+    return false;
+  }
+
 }
 
-
-class scoreText{
-  constructor(){
-    this.score=0;
-    this.y=this.windowHeight;
-    this.x=0
-  }
-  show(){
-    fill(20);
-    strokeWeight(4); 
-    textSize(30);
-    var s='SCORE: '+str(this.score);
-    text(s,this.x,this.y);
-  }
-}
