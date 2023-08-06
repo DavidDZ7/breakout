@@ -271,8 +271,8 @@ class target{
 
   detectCollision(ball){
     if (this.checkCollisions 
-    && ball.x>=this.x-this.width/2
-    && ball.x<=this.x+this.width/2 
+    && ball.x+ball.diameter/2>=this.x-this.width/2 //O-
+    && ball.x-ball.diameter/2<=this.x+this.width/2 //-O
     && ball.y-ball.diameter/2 <= this.y+this.height/2){
       return true;
     }
