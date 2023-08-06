@@ -21,14 +21,14 @@ score=0
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  [targets,maxWinPoints] = createTargets(rows,cols);
-  console.log("maxWinpoints: ",maxWinPoints);
-  paddle1 = new paddle();
-  ball1 = new ball();
+  [targets,targetWidth,maxWinPoints] = createTargets(rows,cols);
+  //console.log("maxWinpoints: ",maxWinPoints);
+  paddle1 = new paddle(targetWidth);//make paddle with same width as targets
+  ball1 = new ball(targetWidth/4);//make ball's diameter equal to a fourth of a target's width
 }
 
 function draw() {
-  let gameIsOver=ball1.check_if_ball_passed_bottom();
+  let gameIsOver=ball1.check_if_ball_passed_bottom(paddle1);
   if (gameIsOver){
     ShowGameOver();//display text
     setTimeout(restartGame, 1500);//restart after 1.5 seconds
@@ -90,7 +90,7 @@ function createTargets(rows,cols){
     }
     targetLife-=1;
   }
-  return [targets,maxWinPoints]
+  return [targets,targetWidth,maxWinPoints]
 }
 
 function ShowGameOver(){
@@ -159,8 +159,8 @@ function restartGame(){
 }
 
 class paddle{
-  constructor(){
-    this.width=150;
+  constructor(width){
+    this.width=width;
     this.height=20;
     this.y=windowHeight-2.5*this.height;
     this.radius=10;
@@ -194,8 +194,8 @@ class paddle{
 
 
 class ball{
-  constructor(){
-    this.diameter=40;
+  constructor(diameter){
+    this.diameter=diameter;
     this.color=ballColor;
     this.speed=6;
     this.reset();
@@ -239,8 +239,8 @@ class ball{
     
   }
 
-  check_if_ball_passed_bottom(){
-    if (this.y+this.diameter/2>=windowHeight){
+  check_if_ball_passed_bottom(paddle1){
+    if (this.y+this.diameter/2>=windowHeight-2.5*paddle1.height){
       return true    
     }
     return false
